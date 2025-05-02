@@ -1,0 +1,5 @@
+수정할 점 
+1. evaluate 함수 -> corner boundary value
+2. MAX_ITERATOR를 남은 시간에 동적으로 할당하기. 
+3. getPosition안의 board point를 convolution을 쓰던 뭘 쓰던 point를 부과하기.
+4. 
