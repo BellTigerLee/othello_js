@@ -1,7 +1,9 @@
 수정할 점 
-1. evaluate 함수 -> corner boundary value
-2. MAX_ITERATOR를 남은 시간에 동적으로 할당하기. 
+[v]1. evaluate 함수 -> corner boundary value
+[v]2. MAX_ITERATOR를 남은 시간에 동적으로 할당하기. 
 [v]3. getPosition안의 board point를 convolution을 쓰던 뭘 쓰던 point를 부과하기.
 4. 놓을 수 없는 상태(-1)를 validMoves에서 제외시키기
 5. 기본 제공하고 있는 getValidMoves 성능 드럽게 안나옴. 
    custom(getValidMovesForBoards)로 사용하는걸로 수정하기.
+6.MCTS 부분에서 freezing되고 있음. -> 7
+7. getValidMovesForBoards, 내 기존꺼 말고 수정한 버전에서 프리징이 자꾸 남.
