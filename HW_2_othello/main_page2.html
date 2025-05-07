@@ -1419,29 +1419,7 @@
 
                             return moves;
                         }
-                        //     // 주어진 보드에서 유효한 수 목록 얻기
-                        // function getValidMovesForBoard(board, player) {
 
-                        //     const validMoves = [];
-
-                        //     for (let row = 0; row < BOARD_SIZE; row++) {
-                        //         for (let col = 0; col < BOARD_SIZE; col++) {
-                        //             if (
-                        //                 isValidMoveForBoard(
-                        //                     board,
-                        //                     row,
-                        //                     col,
-                        //                     player
-                        //                 )
-                        //             ) {
-                        //                 validMoves.push({ row, col });
-                        //             }
-                        //         }
-                        //     }
-
-                        //     return validMoves;
-                        // }
-// TODO: Get Valid moves
                         // 주어진 보드에서 수가 유효한지 확인
                         function isValidMoveForBoard(
                             currentBoard,
@@ -1519,44 +1497,6 @@
                         }
 
 
-                        // // 특정 보드 상태에서 유효한 수 찾기
-                        // function getValidMovesForBoard(boardState, player) {
-                        //     const moves = [];
-                        //     const opponent = player === 1 ? 2 : 1;
-
-                        //     for (let row = 0; row < BOARD_SIZE; row++) {
-                        //         for (let col = 0; col < BOARD_SIZE; col++) {
-                        //             if (boardState[row][col] !== 0) continue;
-
-                        //             for (const [dx, dy] of directions) {
-                        //                 let nx = row + dx;
-                        //                 let ny = col + dy;
-                        //                 let hasOpponent = false;
-
-                        //                 while (
-                        //                     isOnBoard(nx, ny) &&
-                        //                     boardState[nx][ny] === opponent
-                        //                 ) {
-                        //                     hasOpponent = true;
-                        //                     nx += dx;
-                        //                     ny += dy;
-                        //                 }
-
-                        //                 if (
-                        //                     hasOpponent &&
-                        //                     isOnBoard(nx, ny) &&
-                        //                     boardState[nx][ny] === player
-                        //                 ) {
-                        //                     moves.push({ row, col });
-                        //                     break;
-                        //                 }
-                        //             }
-                        //         }
-                        //     }
-
-                        //     return moves;
-                        // } // end getValidMovesForBoard
-
                         // 게임이 끝났는지 확인
                         function isGameOver(boardState) {
                             // 빈 칸이 없거나
@@ -1565,8 +1505,6 @@
                             }
                             // 양쪽 다 둘 수 없으면 게임 종료
                             return (
-                                // getValidMovesForBoard(boardState, 1).length === 0 &&
-                                // getValidMovesForBoard(boardState, 2).length === 0
                                 getValidMovesForBoard(1, boardState).length === 0 &&
                                 getValidMovesForBoard(2, boardState).length === 0 
                                 // getValidMoves(1, boardState).length === 0 &&
@@ -1667,11 +1605,11 @@
                             // 코너는 항상 안정적
                             const corners = [
                                 [0, 0],
-                                [0, 7],
-                                [7, 0],
-                                [7, 7],
+                                [0, BOARD_SIZE-1],
+                                [BOARD_SIZE-1, 0],
+                                [BOARD_SIZE-1, BOARD_SIZE-1],
                             ];
-                            for (const [r, c] of corners) {
+                        for (const [r, c] of corners) {
                                 if (boardState[r][c] === player) {
                                     stable[r][c] = true;
                                     count++;
@@ -1714,32 +1652,31 @@
                         // TODO: MCTS Line
                         //
                         function makeMCTSMove(player) {
-                            // console.log("Player of MCTS: ", player);
                             const UNDER_BOUND = 300;
                             const MAX_ITERATIONS =
-                                1000
-                            //     calcDynamicIterations(player);
-                            // function calcDynamicIterations(
-                            //     player,
-                            //     MAX_ITERATIONS = 1000
-                            // ) {
-                            //     remaining = 0;
-                            //     if (player === BLACK) remaining = blackTimeUsed;
-                            //     else if (player === WHITE)
-                            //         remaining = whiteTimeUsed;
-                            //     dynamic_iter = Math.max(
-                            //         MAX_ITERATIONS *
-                            //             (1 - remaining / MAX_AI_TIME_PER_GAME),
-                            //         UNDER_BOUND
-                            //     );
+                                // 1000
+                                calcDynamicIterations(player);
+                            function calcDynamicIterations(
+                                player,
+                                MAX_ITERATIONS = 1000
+                            ) {
+                                remaining = 0;
+                                if (player === BLACK) remaining = blackTimeUsed;
+                                else if (player === WHITE)
+                                    remaining = whiteTimeUsed;
+                                dynamic_iter = Math.max(
+                                    MAX_ITERATIONS *
+                                        (1 - remaining / MAX_AI_TIME_PER_GAME),
+                                    UNDER_BOUND
+                                );
 
-                            //     console.log(
-                            //         "dinamic iterator: ",
-                            //         Math.floor(dynamic_iter)
-                            //     );
+                                console.log(
+                                    "dinamic iterator: ",
+                                    Math.floor(dynamic_iter)
+                                );
                                 
-                            //     return Math.floor(dynamic_iter);
-                            // }
+                                return Math.floor(dynamic_iter);
+                            }
 
                             const EXPLORATION_PARAM = 1.41; // UCB1 공식의 탐색 매개변수
 
@@ -2023,9 +1960,9 @@
                                 // 1. 코너 점유
                                 const corners = [
                                     [0, 0],
-                                    [0, 7],
-                                    [7, 0],
-                                    [7, 7],
+                                    [0, BOARD_SIZE-1],
+                                    [BOARD_SIZE-1, 0],
+                                    [BOARD_SIZE-1, BOARD_SIZE-1],
                                 ];
 
                                 let cornerScore = 0;
