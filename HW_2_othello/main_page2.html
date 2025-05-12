@@ -721,7 +721,7 @@
             const BLACK = 1;
             const WHITE = 2;
             const BLOCKED = 3;
-            const MAX_AI_TIME_PER_GAME = 20000; // Maximum time to spend in each game (5 seconds)
+            const MAX_AI_TIME_PER_GAME = 10000; // Maximum time to spend in each game (5 seconds)
             let blackTimeUsed = 0; // total time used - black (ms)
             let whiteTimeUsed = 0; // total time used - white (ms)
             let BOARD_SIZE = 8;
@@ -1242,16 +1242,13 @@
                     validMoves,
                     makeMoveFunc
                 ) {
+                    
                     let bestMove = findBestMoveWithMCTS(player);
-                    return bestMove; 
+                    return bestMove;
+
+                    // --- Game Logic ---
 
                     function findBestMoveWithMCTS(player) {
-                        /**
-                         *  1. early, late Weights들이 8x8로 고정되어 있음. 이거 고쳐야함.
-                         *
-                         *
-                         * */
-
                         const directions = [
                             [-1, -1],
                             [-1, 0],
@@ -1266,6 +1263,7 @@
                         const earlyBoardWeights = getRevisedBoardWeights(true);
                         const lateBoardWeights = getRevisedBoardWeights(false);
 
+                        //MARK: 가중치 동적 조절 함수
                         function getRevisedBoardWeights(
                             isEarly,
                             method = "bilinear"
@@ -1273,16 +1271,6 @@
                             let sampleWeights = [];
 
                             if (isEarly === true) {
-                                // sampleWeights = [
-                                //     [ 90, -15,  10,   5,   5,  10, -15,  90],
-                                //     [-15, -25,  -3,  -3,  -3,  -3, -25, -15],
-                                //     [ 10,  -3,   2,   1,   1,   2,  -3,  10],
-                                //     [  5,  -3,   1,   1,   1,   1,  -3,   5],
-                                //     [  5,  -3,   1,   1,   1,   1,  -3,   5],
-                                //     [ 10,  -3,   2,   1,   1,   2,  -3,  10],
-                                //     [-15, -25,  -3,  -3,  -3,  -3, -25, -15],
-                                //     [ 90, -15,  10,   5,   5,  10, -15,  90],
-                                // ];
                                 sampleWeights = [
                                     [120, 15, 40, 35, 35, 40, 15, 120],
                                     [15, 5, 27, 27, 27, 27, 5, 15],
@@ -1305,10 +1293,7 @@
                                     [10, 5, 5, 5, 5, 5, 5, 10],
                                 ];
                             }
-                            if (BOARD_SIZE === 8) {
-                                console.table(sampleWeights)
-                                return sampleWeights
-                            }
+
                             const M = 8;
                             const result = Array.from(
                                 { length: BOARD_SIZE },
@@ -1368,47 +1353,27 @@
                         }
 
                         // 임시 돌 놓기 (뒤집기 시뮬레이션 결과 포함)
-                        function makeSimulation(cpBoard, row, col, player) {
-                            cpBoard[row][col] = player;
-                            const opponent = player === 1 ? 2 : 1;
-
-                            directions.forEach(([dx, dy]) => {
-                                let nx = row + dx;
-                                let ny = col + dy;
-                                const discsFlipped = [];
-
-                                while (
-                                    isOnBoard(nx, ny) &&
-                                    cpBoard[nx][ny] !== 0 &&
-                                    cpBoard[nx][ny] === opponent
-                                ) {
-                                    discsFlipped.push([nx, ny]);
-                                    nx += dx;
-                                    ny += dy;
-                                }
-
-                                if (
-                                    discsFlipped.length > 0 &&
-                                    isOnBoard(nx, ny) &&
-                                    cpBoard[nx][ny] === player
-                                ) {
-                                    discsFlipped.forEach(([x, y]) => {
-                                        cpBoard[x][y] = player;
-                                    });
-                                }
-                            });
-                        } // end makeSimulation
-
 
                         // 주어진 보드에서 유효한 수 목록 얻기
-                        function getValidMovesForBoard(player, currentBoard = board) {
+                        // MARK: Custom getValidMove
+                        function getValidMovesForBoard(
+                            player,
+                            currentBoard = board
+                        ) {
                             const moves = [];
                             // Ensure we're using the correct board size from the current board
                             const size = currentBoard.length;
-                            
+
                             for (let row = 0; row < size; row++) {
                                 for (let col = 0; col < size; col++) {
-                                    if (isValidMoveForBoard(currentBoard, row, col, player)) {
+                                    if (
+                                        isValidMoveForBoard(
+                                            currentBoard,
+                                            row,
+                                            col,
+                                            player
+                                        )
+                                    ) {
                                         moves.push({ row, col });
                                     }
                                 }
@@ -1427,7 +1392,7 @@
                             col,
                             player
                         ) {
-                                // Check if the move is within the board and the cell is empty
+                            // Check if the move is within the board and the cell is empty
                             if (
                                 !isOnBoard(row, col) ||
                                 currentBoard[row][col] !== EMPTY
@@ -1449,7 +1414,8 @@
 
                             // Get current stage configuration for the special rule check
                             const stageConfig = currentStage || stages[0];
-                            const ignoreOcclusion = stageConfig.ignoreOcclusion || false;
+                            const ignoreOcclusion =
+                                stageConfig.ignoreOcclusion || false;
 
                             // For each direction from the placed piece
                             for (const [dr, dc] of directions) {
@@ -1496,7 +1462,6 @@
                             return false;
                         }
 
-
                         // 게임이 끝났는지 확인
                         function isGameOver(boardState) {
                             // 빈 칸이 없거나
@@ -1505,13 +1470,14 @@
                             }
                             // 양쪽 다 둘 수 없으면 게임 종료
                             return (
-                                getValidMovesForBoard(1, boardState).length === 0 &&
-                                getValidMovesForBoard(2, boardState).length === 0 
-                                // getValidMoves(1, boardState).length === 0 &&
-                                // getValidMoves(2, boardState).length === 0
+                                getValidMovesForBoard(1, boardState).length ===
+                                    0 &&
+                                getValidMovesForBoard(2, boardState).length ===
+                                    0
                             );
                         }
-                        function getPositionValue(row, col, gameStage) {
+
+                        function getPositionValue(row, col, gameStage=0.8) {
                             // 게임 단계에 따라 가중치 결정
                             if (gameStage < 0.3) {
                                 return earlyBoardWeights[row][col];
@@ -1601,15 +1567,15 @@
                                 .fill()
                                 .map(() => Array(BOARD_SIZE).fill(false));
                             let count = 0;
-
+                            const limSize = BOARD_SIZE - 1;
                             // 코너는 항상 안정적
                             const corners = [
                                 [0, 0],
-                                [0, BOARD_SIZE-1],
-                                [BOARD_SIZE-1, 0],
-                                [BOARD_SIZE-1, BOARD_SIZE-1],
+                                [0, limSize],
+                                [limSize, 0],
+                                [limSize, limSize],
                             ];
-                        for (const [r, c] of corners) {
+                            for (const [r, c] of corners) {
                                 if (boardState[r][c] === player) {
                                     stable[r][c] = true;
                                     count++;
@@ -1652,29 +1618,40 @@
                         // TODO: MCTS Line
                         //
                         function makeMCTSMove(player) {
-                            const UNDER_BOUND = 300;
+                            console.log("cnt: ", cnt);
+                            const UNDER_BOUND = 200;
                             const MAX_ITERATIONS =
                                 // 1000
                                 calcDynamicIterations(player);
                             function calcDynamicIterations(
                                 player,
-                                MAX_ITERATIONS = 1000
+                                MAX_ITERATIONS = 1300
                             ) {
-                                remaining = 0;
-                                if (player === BLACK) remaining = blackTimeUsed;
+                                let remaining_time = 0;
+                                if (player === BLACK) remaining_time = blackTimeUsed;
                                 else if (player === WHITE)
-                                    remaining = whiteTimeUsed;
-                                dynamic_iter = Math.max(
-                                    MAX_ITERATIONS *
-                                        (1 - remaining / MAX_AI_TIME_PER_GAME),
-                                    UNDER_BOUND
-                                );
+                                    remaining_time = whiteTimeUsed;
+                                // dynamic_iter = Math.max(
+                                //     MAX_ITERATIONS *
+                                //         (1 - remaining_time / MAX_AI_TIME_PER_GAME),
+                                //     UNDER_BOUND
+                                // );
+                                // 식 1.
+                                // MAX_ITERATIONS * (1-np.abs(i/MAX_AI_TIME_PER_GAME))
+                                // 식 2.
+                                // MAX_ITERATIONS * Math.pow(1 - Math.abs(remaining_time / MAX_AI_TIME_PER_GAME), 0.5)
+                                // 식 3.
+                                // MAX_ITERATIONS * (1 - Math.pow(remaining_time / MAX_AI_TIME_PER_GAME, 2))
+                                dynamic_iter = 
+                                    MAX_ITERATIONS * Math.pow(1 - Math.abs(remaining_time / MAX_AI_TIME_PER_GAME), 0.5)
+                                    // MAX_ITERATIONS * (1 - Math.pow(remaining_time / MAX_AI_TIME_PER_GAME, 2))
+                                // dynamic_iter = Math.log(MAX_ITERATIONS * (1-remaining_time/MAX_AI_TIME_PER_GAME))*UNDER_BOUND
 
-                                console.log(
-                                    "dinamic iterator: ",
-                                    Math.floor(dynamic_iter)
-                                );
-                                
+                                // console.log(
+                                //     "dinamic iterator: ",
+                                //     Math.floor(dynamic_iter)
+                                // );
+
                                 return Math.floor(dynamic_iter);
                             }
 
@@ -1702,9 +1679,10 @@
                                     if (player) {
                                         this.untriedMoves =
                                             getValidMovesForBoard(
-                                                player, this.board
+                                                player,
+                                                this.board
                                             );
-                                            // getValidMoves(player, this.board);
+                                        // getValidMoves(player, this.board);
                                     }
                                 }
 
@@ -1858,7 +1836,10 @@
                                 // console.log("BEST CHILD :", bestChild.score)
                                 if (!bestChild || !bestChild.moveFromParent) {
                                     // 최선의 자식이 없거나 moveFromParent가 없는 경우 임의의 유효한 수 반환
-                                    const validMoves = getValidMovesForBoard(player, rootState);
+                                    const validMoves = getValidMovesForBoard(
+                                        player,
+                                        rootState
+                                    );
                                     // const validMoves = getValidMoves(
                                     //     player,
                                     //     rootState
@@ -1889,10 +1870,6 @@
                                         currentPlayer,
                                         board
                                     );
-                                    // const validMoves = getValidMoves(
-                                    //     currentPlayer,
-                                    //     board
-                                    // );
 
                                     if (validMoves.length === 0) {
                                         consecutivePasses++;
@@ -1931,28 +1908,27 @@
                             // 보드 상태 평가
                             function evaluateBoard(boardState, player) {
                                 const opponent = player === 1 ? 2 : 1;
-
                                 // 게임 단계 결정 (보드의 비율로)
-                                const totalPieces = boardState
-                                    .flat()
-                                    .filter((cell) => cell !== 0).length;
-                                const emptySpaces =
-                                    BOARD_SIZE * BOARD_SIZE - totalPieces;
-                                const gameStage = totalPieces / BOARD_SIZE; // 0~1 사이 값
+                                // const totalPieces = boardState
+                                //     .flat()
+                                //     .filter((cell) => cell !== 0).length;
+                                // const emptySpaces =
+                                //     BOARD_SIZE * BOARD_SIZE - totalPieces;
+                                // const gameStage = 1 - emptySpaces / totalPieces; // 0~1 사이 값
 
                                 // 게임이 종료되었으면 최종 점수로 평가
-                                // if (isGameOver(boardState)) {
-                                //     const playerCount = boardState
-                                //         .flat()
-                                //         .filter((cell) => cell === player).length;
-                                //     const opponentCount = boardState
-                                //         .flat()
-                                //         .filter((cell) => cell === opponent).length;
+                                if (isGameOver(boardState)) {
+                                    const playerCount = boardState
+                                        .flat()
+                                        .filter((cell) => cell === player).length;
+                                    const opponentCount = boardState
+                                        .flat()
+                                        .filter((cell) => cell === opponent).length;
 
-                                //     if (playerCount > opponentCount) return 10000;
-                                //     if (playerCount < opponentCount) return -10000;
-                                //     return 0; // 무승부
-                                // }
+                                    if (playerCount > opponentCount) return 10000;
+                                    if (playerCount < opponentCount) return -10000;
+                                    return 0; // 무승부
+                                }
 
                                 // 각 지표별 가중치 계산
                                 let score = 0;
@@ -1960,9 +1936,9 @@
                                 // 1. 코너 점유
                                 const corners = [
                                     [0, 0],
-                                    [0, BOARD_SIZE-1],
-                                    [BOARD_SIZE-1, 0],
-                                    [BOARD_SIZE-1, BOARD_SIZE-1],
+                                    [0, BOARD_SIZE - 1],
+                                    [BOARD_SIZE - 1, 0],
+                                    [BOARD_SIZE - 1, BOARD_SIZE - 1],
                                 ];
 
                                 let cornerScore = 0;
@@ -1990,23 +1966,14 @@
                                     boardState
                                 ).length;
 
-                                // const playerMobility = getValidMoves(
-                                //     player,
-                                //     boardState
-                                // ).length;
-                                // const opponentMobility = getValidMoves(
-                                //     opponent,
-                                //     boardState
-                                // ).length;
-
-                                // 게임 초반에는 기동성이 중요, 후반에는 덜 중요
-                                const mobilityWeight = Math.max(
-                                    0,
-                                    12 - gameStage * 12
-                                );
-                                score +=
-                                    (playerMobility - opponentMobility) *
-                                    mobilityWeight;
+                                // // 게임 초반에는 기동성이 중요, 후반에는 덜 중요
+                                // const mobilityWeight = Math.max(
+                                //     0,
+                                //     12 - gameStage * 12
+                                // );
+                                // score +=
+                                //     (playerMobility - opponentMobility) *
+                                //     mobilityWeight;
 
                                 // 4. 포지셔널 전략 (위치 가중치 적용)
                                 let positionScore = 0;
@@ -2014,95 +1981,76 @@
                                     for (let c = 0; c < BOARD_SIZE; c++) {
                                         if (boardState[r][c] === player) {
                                             positionScore += getPositionValue(
-                                                r,
-                                                c,
-                                                gameStage
+                                                r, c
                                             );
                                         } else if (
                                             boardState[r][c] === opponent
                                         ) {
                                             positionScore -= getPositionValue(
-                                                r,
-                                                c,
-                                                gameStage
+                                                r, c
                                             );
                                         }
                                     }
                                 }
                                 score += positionScore;
 
-                                // 5. X-스퀘어, C-스퀘어 점수 (위험한 위치 회피)
-                                if (gameStage < 0.7) {
-                                    // 게임 후반에는 덜 중요
-                                    for (let i = 0; i < 4; i++) {
-                                        const [cornerR, cornerC] = corners[i];
+                                // // 5. X-스퀘어, C-스퀘어 점수 (위험한 위치 회피)
+                                // if (gameStage < 0.7) {
+                                //     // 게임 후반에는 덜 중요
+                                //     for (let i = 0; i < 4; i++) {
+                                //         const [cornerR, cornerC] = corners[i];
 
-                                        // X-스퀘어
-                                        const xSquare = [
-                                            [
-                                                cornerR +
-                                                    (cornerR === 0 ? 1 : -1),
-                                                cornerC +
-                                                    (cornerC === 0 ? 1 : -1),
-                                            ],
-                                        ];
+                                //         // X-스퀘어
+                                //         const xSquare = [
+                                //             [
+                                //                 cornerR +
+                                //                     (cornerR === 0 ? 1 : -1),
+                                //                 cornerC +
+                                //                     (cornerC === 0 ? 1 : -1),
+                                //             ],
+                                //         ];
 
-                                        // C-스퀘어
-                                        const cSquares = [
-                                            [
-                                                cornerR,
-                                                cornerC +
-                                                    (cornerC === 0 ? 1 : -1),
-                                            ],
-                                            [
-                                                cornerR +
-                                                    (cornerR === 0 ? 1 : -1),
-                                                cornerC,
-                                            ],
-                                        ];
+                                //         // C-스퀘어
+                                //         const cSquares = [
+                                //             [
+                                //                 cornerR,
+                                //                 cornerC +
+                                //                     (cornerC === 0 ? 1 : -1),
+                                //             ],
+                                //             [
+                                //                 cornerR +
+                                //                     (cornerR === 0 ? 1 : -1),
+                                //                 cornerC,
+                                //             ],
+                                //         ];
 
-                                        // 해당 코너가 비어있거나 상대방 돌이 있으면 X-스퀘어, C-스퀘어는 위험
-                                        if (
-                                            boardState[cornerR][cornerC] !==
-                                            player
-                                        ) {
-                                            for (const [r, c] of xSquare) {
-                                                if (boardState[r][c] === player)
-                                                    score -= 15;
-                                                else if (
-                                                    boardState[r][c] ===
-                                                    opponent
-                                                )
-                                                    score += 10;
-                                            }
+                                //         // 해당 코너가 비어있거나 상대방 돌이 있으면 X-스퀘어, C-스퀘어는 위험
+                                //         if (
+                                //             boardState[cornerR][cornerC] !==
+                                //             player
+                                //         ) {
+                                //             for (const [r, c] of xSquare) {
+                                //                 if (boardState[r][c] === player)
+                                //                     score -= 15;
+                                //                 else if (
+                                //                     boardState[r][c] ===
+                                //                     opponent
+                                //                 )
+                                //                     score += 10;
+                                //             }
 
-                                            for (const [r, c] of cSquares) {
-                                                if (boardState[r][c] === player)
-                                                    score -= 10;
-                                                else if (
-                                                    boardState[r][c] ===
-                                                    opponent
-                                                )
-                                                    score += 7;
-                                            }
-                                        }
-                                    }
-                                }
-
-                                // 6. 패리티 전략 (게임 후반에 중요)
-                                let isOdd = emptySpaces % 2 === 1;
-                                if (gameStage > 0.6) {
-                                    // 남은 빈 칸 수의 패리티 체크
-                                    if (
-                                        (player === 1 && isOdd) ||
-                                        (player === 2 && !isOdd)
-                                    ) {
-                                        // 짝수면 후공에게 유리
-                                        score += 8;
-                                    } else {
-                                        score -= 8;
-                                    }
-                                }
+                                //             for (const [r, c] of cSquares) {
+                                //                 if (boardState[r][c] === player)
+                                //                     score -= 10;
+                                //                 else if (
+                                //                     boardState[r][c] ===
+                                //                     opponent
+                                //                 )
+                                //                     score += 7;
+                                //             }
+                                //         }
+                                //     }
+                                // }
 
                                 // 7. Edgeplay 전략 (Anti-Greedy)
                                 for (let i = 0; i < 4; ++i) {
@@ -2141,21 +2089,21 @@
                                     }
                                 }
 
-                                // 8. 중반-돌 갯수 고려하기 (Anti-greedy)
-                                if (0.3 < gameStage && gameStage < 0.7) {
-                                    const playerCount = boardState
-                                        .flat()
-                                        .filter(
-                                            (cell) => cell === player
-                                        ).length;
-                                    const opponentCount = boardState
-                                        .flat()
-                                        .filter(
-                                            (cell) => cell === opponent
-                                        ).length;
-                                    // 중반에는 돌 개수도 약간 고려 (greedy 전략에 대응)
-                                    score += (playerCount - opponentCount) * 2;
-                                }
+                                // // 8. 중반-돌 갯수 고려하기 (Anti-greedy)
+                                // if (0.3 < gameStage && gameStage < 0.7) {
+                                //     const playerCount = boardState
+                                //         .flat()
+                                //         .filter(
+                                //             (cell) => cell === player
+                                //         ).length;
+                                //     const opponentCount = boardState
+                                //         .flat()
+                                //         .filter(
+                                //             (cell) => cell === opponent
+                                //         ).length;
+                                //     // 중반에는 돌 개수도 약간 고려 (greedy 전략에 대응)
+                                //     score += (playerCount - opponentCount) * 2;
+                                // }
 
                                 return score;
                             }
@@ -2177,8 +2125,6 @@
                                 }
                             }
 
-
-
                             // 주어진 보드에서 시뮬레이션된 수 실행
                             function makeSimulatedMove(
                                 board,
@@ -2187,29 +2133,16 @@
                                 player
                             ) {
                                 board[row][col] = player;
-
-                                const directions = [
-                                    [-1, -1],
-                                    [-1, 0],
-                                    [-1, 1],
-                                    [0, -1],
-                                    [0, 1],
-                                    [1, -1],
-                                    [1, 0],
-                                    [1, 1],
-                                ];
-
+                                let capturedPieces = [];
                                 directions.forEach(([dr, dc]) => {
                                     let r = row + dr;
                                     let c = col + dc;
                                     const discsToFlip = [];
 
                                     while (
-                                        r >= 0 &&
-                                        r < BOARD_SIZE &&
-                                        c >= 0 &&
-                                        c < BOARD_SIZE &&
+                                        isOnBoard(r, c) &&
                                         board[r][c] !== EMPTY &&
+                                        board[r][c] !== BLOCKED &&
                                         board[r][c] !== player
                                     ) {
                                         discsToFlip.push([r, c]);
@@ -2239,7 +2172,6 @@
                 },
             };
 
-            // --- Game Logic ---
             function initializeBoard(stageConfig, isPreview = false) {
                 console.log(
                     `Init board. Stage:${
